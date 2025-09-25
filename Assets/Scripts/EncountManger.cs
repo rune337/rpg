@@ -144,7 +144,10 @@ public class EncountManger : MonoBehaviour
     //ダンジョンのisTriggerに当たらなくなった時
     private void OnTriggerExit2D(Collider2D other)
     {
-        isInDungeon = false;
-        Debug.Log("Dungeon外に出た");
+        if (other.CompareTag("DungeonArea"))
+        {
+            isInDungeon = false;
+            Debug.Log("Dungeon外に出た");
+        }
     }
 }
