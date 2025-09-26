@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cce34d62290614ddc8e6c05cef10e2de, type: 3}
   m_Name: NewItem 1
   m_EditorClassIdentifier: 
-  itemName: 
+  itemName: "\u30B5\u30D5\u30A1\u30A4\u30A2"
   icon: {fileID: 0}
-  description: 
+  description: "\u9752\u304F\u8F1D\u304F\u6148\u611B\u306E\u5B9D\u77F3"

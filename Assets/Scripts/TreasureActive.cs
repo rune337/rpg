@@ -1,4 +1,6 @@
 using UnityEngine;
+using TMPro;
+using System.Collections;
 
 public class TreasureActive : MonoBehaviour
 {
@@ -7,8 +9,22 @@ public class TreasureActive : MonoBehaviour
     private bool isPlayerNear = false; // プレイヤーが近くにいるかどうか
     public TreasureData[] items;
     public MessageData msg;
+    GameObject canvas;
+    GameObject talkPanel;
+    TextMeshProUGUI messageText;
 
-    
+    void Start()
+    {
+        canvas = GameObject.FindGameObjectWithTag("Canvas");
+        talkPanel = canvas.transform.Find("Talk").gameObject;
+        messageText = talkPanel.transform.Find("MessageText").GetComponent<TextMeshProUGUI>();
+        var textObj = talkPanel?.transform.Find("MessageText");
+        if (textObj == null) Debug.LogError("MessageText が見つからない！");
+        else messageText = textObj.GetComponent<TextMeshProUGUI>();
+    }
+
+
+
 
     private void Update()
     {
@@ -30,6 +46,9 @@ public class TreasureActive : MonoBehaviour
         if (items != null && items.Length > 0)
         {
             Debug.Log($"宝箱を開けた！ {items[0].itemName} を手に入れた！");
+
+
+            StartCoroutine(ItemTalk());
         }
         else
         {
@@ -51,5 +70,33 @@ public class TreasureActive : MonoBehaviour
         {
             isPlayerNear = false;
         }
+    }
+
+    IEnumerator ItemTalk()
+    {
+
+        GameManager.gameState = GameState.talk;
+        talkPanel.SetActive(true);
+        Time.timeScale = 0;
+        messageText.text = msg.msgData[0].message;
+
+        // 押しっぱなし対策: 一度キーを離すまで待機
+        while (Input.GetKey(KeyCode.Return))
+        {
+            yield return null;
+        }
+
+        //エンター押されるまで待機
+        while (!Input.GetKeyDown(KeyCode.Return))
+        {
+            yield return null;
+        }
+
+
+        //エンター押されたら閉じる
+        talkPanel.SetActive(false);
+        Time.timeScale = 1;
+        GameManager.gameState = GameState.playing;
+
     }
 }

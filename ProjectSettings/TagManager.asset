@@ -12,6 +12,7 @@ TagManager:
   - Battle
   - DungeonArea
   - Room
+  - Treasure
   layers:
   - Default
   - TransparentFX

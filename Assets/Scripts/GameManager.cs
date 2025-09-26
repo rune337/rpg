@@ -8,6 +8,7 @@ public enum GameState
     gameclear,
     battle,
     menu,
+    talk,
     ending
 }
 
