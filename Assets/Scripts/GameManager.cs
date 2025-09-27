@@ -14,6 +14,11 @@ public enum GameState
 
 public class GameManager : MonoBehaviour
 {
+
+    public static GameManager instance;
+    public delegate void OnDungeonExit();
+    public static event OnDungeonExit DungeonExitEvent;
+
     public static GameState gameState; //ゲームのステータス
     //ワープ先とワープ元を同じにすると入った瞬間に出てしまうのでオブジェクトを分ける
     //ワープ先のオブジェクトそのままだとぶつかって邪魔なのでコライダーオフにする
@@ -29,6 +34,7 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
+        instance = this;
         obj = GameObject.FindWithTag("TownEntry");
         col = obj.GetComponent<Collider2D>();
 
@@ -56,5 +62,10 @@ public class GameManager : MonoBehaviour
             player.transform.position = targetPosition.position;
             Debug.Log(ToTown.inTown);
         }
+    }
+
+     public void ExitDungeon()
+    {
+        DungeonExitEvent?.Invoke();
     }
 }

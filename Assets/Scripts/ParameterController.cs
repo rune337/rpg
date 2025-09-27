@@ -28,7 +28,7 @@ public class ParameterController : MonoBehaviour
         public EnemyData data;
     }
     public List<EnemyStats> enemies = new List<EnemyStats>();
-    
+
 
 
 
@@ -38,11 +38,37 @@ public class ParameterController : MonoBehaviour
     {
         public string name;
         public int hp;
+        public int baseAttack;
+        public int baseDefense;
+        public float baseSpeed;
+
         public int attack;
         public int defense;
         public float speed;
+
         public PlayerData data;
+
+        public List<ItemData> equippedItems = new List<ItemData>(); // 装備品リスト
+
+        public void RecalculateStats()
+        {
+            attack = baseAttack;
+            defense = baseDefense;
+            speed = baseSpeed;
+
+            foreach (var item in equippedItems)
+            {
+                attack += item.attackBonus;
+                defense += item.defenseBonus;
+                speed += item.moveSpeedBonus;
+            }
+        }
     }
+
+
+
+
+
     public List<PlayerStats> player = new List<PlayerStats>();
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -82,7 +108,7 @@ public class ParameterController : MonoBehaviour
         int damage = Mathf.Max(attacker.attack - target.defense, 1); // 最低1ダメージ
         target.hp -= damage;
 
-        
+
         string str = $"{attacker.name}の攻撃！ {target.name}に{damage}ダメージ！";
         battleMessageWindow.AddMessage(str);//メッセージクラスの関数に渡して呼び出す
 
@@ -146,5 +172,43 @@ public class ParameterController : MonoBehaviour
             }
         }
     }
+
+    public int GetMaxHP(int playerIndex = 0)
+    {
+        if (playerIndex < 0 || playerIndex >= player.Count) return 0;
+        return player[playerIndex].data.maxHP;
+    }
+
+   public void EquipItem(ItemData itemData, int playerIndex = 0)
+{
+    if (playerIndex < 0 || playerIndex >= player.Count) return;
+
+    PlayerStats stats = player[playerIndex];
+
+    if (!stats.equippedItems.Contains(itemData))
+    {
+        stats.equippedItems.Add(itemData);
+        stats.RecalculateStats();
+        Debug.Log($"{stats.name} が {itemData.itemName} を装備 → 攻撃: {stats.attack}, 防御: {stats.defense}, 速度: {stats.speed}");
+    }
+}
+
+public void UnequipItem(ItemData itemData, int playerIndex = 0)
+{
+    if (playerIndex < 0 || playerIndex >= player.Count) return;
+
+    PlayerStats stats = player[playerIndex];
+
+    if (stats.equippedItems.Contains(itemData))
+    {
+        stats.equippedItems.Remove(itemData);
+        stats.RecalculateStats();
+        Debug.Log($"{stats.name} が {itemData.itemName} を外した → 攻撃: {stats.attack}, 防御: {stats.defense}, 速度: {stats.speed}");
+    }
+}
+
+
+
+
 }
 

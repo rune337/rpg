@@ -15,3 +15,5 @@ MonoBehaviour:
   itemName: "\u30A2\u30E1\u30B8\u30B9\u30C8"
   icon: {fileID: 0}
   description: "\u7D2B\u306B\u7729\u3044\u5E73\u548C\u306E\u5B9D\u77F3"
+  itemData: {fileID: 11400000, guid: 64fca476ff56a445db5b5e217efa0748, type: 2}
+  count: 1

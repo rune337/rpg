@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class Menu : MonoBehaviour
 {
+    public TMP_FontAsset japaneseFont;
+
     public GameObject canvas;
     public GameObject menu;
     public GameObject player;
@@ -14,9 +16,13 @@ public class Menu : MonoBehaviour
     TextMeshProUGUI item;
     TextMeshProUGUI check;
     TextMeshProUGUI equip;
-    ItemInventory playerItem;
+    PlayerInventory playerItem;
+
 
     public GameObject itemMenu;
+    public GameObject itemDetail;
+    TextMeshProUGUI itemDetailText;
+
 
     public GameObject[] cursors;
     int currentIndex = 0;
@@ -32,7 +38,6 @@ public class Menu : MonoBehaviour
 
     void Start()
     {
-
         player = GameObject.FindGameObjectWithTag("Player");
         canvas = GameObject.FindGameObjectWithTag("Canvas");
         menu = canvas.transform.Find("Menu").gameObject;
@@ -53,7 +58,11 @@ public class Menu : MonoBehaviour
 
         itemMenu.SetActive(false); // アイテムメニューも最初閉じる
 
-        playerItem = player.GetComponent<ItemInventory>();
+        itemDetail = itemMenu.transform.Find("ItemDetail").gameObject;
+        itemDetailText = itemDetail.transform.Find("ItemDetailText").GetComponent<TextMeshProUGUI>();
+
+
+        playerItem = player.GetComponent<PlayerInventory>();
 
         foreach (var cursor in cursors)
             cursor.SetActive(false);
@@ -175,7 +184,10 @@ public class Menu : MonoBehaviour
         foreach (var slot in itemSlots) Destroy(slot);
         itemSlots.Clear();
 
-        foreach (var i in playerItem.items)
+        // playerItem じゃなくて playerInventory を使う
+        PlayerInventory playerInventory = player.GetComponent<PlayerInventory>();
+
+        foreach (var i in PlayerInventory.items)
         {
             GameObject slot = new GameObject("ItemSlot");
             slot.transform.SetParent(itemListParent, false);
@@ -184,8 +196,10 @@ public class Menu : MonoBehaviour
             rt.sizeDelta = new Vector2(150, 30);
 
             TextMeshProUGUI text = slot.AddComponent<TextMeshProUGUI>();
-            text.text = $"{i.name} ×{i.count}";
-            text.fontSize = 24;
+            // ここ修正: i.data.itemName と i.count を使う
+            text.font = japaneseFont;
+            text.text = $"{i.data.itemName} ×{i.count}";
+            text.fontSize = 20;
             text.lineSpacing = 0f;
 
             // 文字色を強制白に設定
@@ -210,6 +224,7 @@ public class Menu : MonoBehaviour
     }
 
 
+
     void CloseItemMenu()
     {
         itemMenu.SetActive(false);
@@ -230,15 +245,79 @@ public class Menu : MonoBehaviour
                     RectTransform cursorRT = cursor.GetComponent<RectTransform>();
                     if (cursorRT != null)
                     {
-                        cursorRT.anchoredPosition = new Vector2(-100, -10); // 左に20移動
+                        cursorRT.anchoredPosition = new Vector2(-100, -10); // ←位置調整
                     }
                 }
             }
         }
+
+        // アイテム詳細表示
+        if (itemIndex >= 0 && itemIndex < PlayerInventory.items.Count)
+        {
+            var selectedItem = PlayerInventory.items[itemIndex].data;
+            if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.description))
+            {
+                itemDetail.SetActive(true);
+                itemDetailText.text = selectedItem.description;
+            }
+            else
+            {
+                itemDetail.SetActive(false);
+            }
+        }
+        else
+        {
+            itemDetail.SetActive(false);
+        }
     }
 
-    void UseItem(int index)
+    public void UseItem(int index)
+{
+    if (index < 0 || index >= PlayerInventory.items.Count) return;
+
+    InventoryItem item = PlayerInventory.items[index];
+    PlayerStatus playerStatus = player.GetComponent<PlayerStatus>();
+
+    switch (item.data.type)
     {
-        Debug.Log($"{playerItem.items[index].name} を使用しました");
+        case ItemType.Consumable:
+            playerStatus.RestoreHP(item.data.power);
+            item.count--;
+            break;
+
+        case ItemType.Equipment:
+            playerStatus.Equip(item.data);
+            break;
+
+        case ItemType.Need:
+            Debug.Log($"{item.data.itemName} を使用しました（消費しない）");
+            break;
     }
+
+    if (item.count <= 0)
+    {
+        PlayerInventory.items.RemoveAt(index);
+    }
+    RefreshItemMenu();
+}
+
+
+
+    void RefreshItemMenu()
+    {
+        int savedIndex = itemIndex; // カーソル位置を保存
+        CloseItemMenu();
+        OpenItemMenu();
+        itemIndex = Mathf.Clamp(savedIndex, 0, itemSlots.Count - 1); // 保存した位置を復元
+        UpdateItemCursor();
+    }
+
+
+
+
+
+
+
+
+
 }

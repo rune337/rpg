@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1399010875550249541}
   m_Layer: 0
   m_Name: Treacure_1
-  m_TagString: Untagged
+  m_TagString: Treasure
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -148,9 +148,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1cf374dfdd174a4db3515ed120f9f61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  respawnType: 0
   openedSprite: {fileID: -4078352362714802768, guid: 0ff3292b4fd9a4f6b8c37c2f91696038, type: 3}
+  closedSprite: {fileID: 41146296033780363, guid: 0ff3292b4fd9a4f6b8c37c2f91696038, type: 3}
   items:
   - {fileID: 11400000, guid: 4f8ef56bd544b434da8442846be788bc, type: 2}
+  msg: {fileID: 11400000, guid: 4802d8559bb4240749521da6c56fca78, type: 2}
 --- !u!61 &1399010875550249541
 BoxCollider2D:
   m_ObjectHideFlags: 0
