@@ -1,32 +1,38 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
+using UnityEngine.UI;
 
 public class Menu : MonoBehaviour
 {
-    public GameObject canvas; //キャンバス一番親
-    public GameObject menu;  //メニューパネル
+    public GameObject canvas;
+    public GameObject menu;
     public GameObject player;
 
-    TextMeshProUGUI talk;  //話す
-    TextMeshProUGUI item;  //道具
-    TextMeshProUGUI check; //調べる
-    TextMeshProUGUI equip; //装備
+    TextMeshProUGUI talk;
+    TextMeshProUGUI item;
+    TextMeshProUGUI check;
+    TextMeshProUGUI equip;
     ItemInventory playerItem;
 
     public GameObject itemMenu;
 
-    public GameObject[] cursors; //カーソル
-    int currentIndex = 0; // 現在のカーソル位置（0=左上）
+    public GameObject[] cursors;
+    int currentIndex = 0;
 
-    public bool isMenuOpen = false; //メニュー開いているかどうかの判別フラグ
-    TextMeshProUGUI itemText;
+    public bool isMenuOpen = false;
     bool isItemMenuOpen = false;
+
+    public GameObject cursorPrefab; // カーソルプレハブ
+    public Transform itemListParent; // アイテムリストの親オブジェクト
+
+    private List<GameObject> itemSlots = new List<GameObject>();
+    private int itemIndex = 0;
 
     void Start()
     {
+
         player = GameObject.FindGameObjectWithTag("Player");
         canvas = GameObject.FindGameObjectWithTag("Canvas");
         menu = canvas.transform.Find("Menu").gameObject;
@@ -37,6 +43,7 @@ public class Menu : MonoBehaviour
         equip = menu.transform.Find("Equip").GetComponent<TextMeshProUGUI>();
 
         itemMenu = menu.transform.Find("ItemMenu").gameObject;
+        itemListParent = itemMenu.transform.Find("ItemList");
 
         cursors = new GameObject[4];
         cursors[0] = talk.transform.Find("Cursor").gameObject;
@@ -44,44 +51,46 @@ public class Menu : MonoBehaviour
         cursors[2] = check.transform.Find("Cursor").gameObject;
         cursors[3] = equip.transform.Find("Cursor").gameObject;
 
-        playerItem = player.GetComponent<ItemInventory>();
-        itemText = itemMenu.transform.Find("ItemText").GetComponent<TextMeshProUGUI>();
+        itemMenu.SetActive(false); // アイテムメニューも最初閉じる
 
+        playerItem = player.GetComponent<ItemInventory>();
 
         foreach (var cursor in cursors)
             cursor.SetActive(false);
 
         cursors[currentIndex].SetActive(true);
 
-        // 最初は非表示
         menu.SetActive(false);
+
+        SetupVerticalLayoutGroup();
+    }
+
+    void SetupVerticalLayoutGroup()
+    {
+        var layout = itemListParent.GetComponent<VerticalLayoutGroup>();
+        if (layout == null)
+            layout = itemListParent.gameObject.AddComponent<VerticalLayoutGroup>();
+
+        layout.spacing = 2; // アイテム間の間隔
+        layout.childForceExpandHeight = false;
+        layout.childControlHeight = true;
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (!isMenuOpen)
-            {
-                StartMenu();
-            }
-            else
-            {
-                EndMenu();
-            }
+            if (!isMenuOpen) StartMenu();
+            else EndMenu();
         }
-
-
     }
 
     void StartMenu()
     {
-        menu.SetActive(true);   // メニューを開く
+        menu.SetActive(true);
         GameManager.gameState = GameState.menu;
         Time.timeScale = 0;
-
         isMenuOpen = true;
-
         StartCoroutine(MenuLoop());
     }
 
@@ -89,145 +98,147 @@ public class Menu : MonoBehaviour
     {
         while (isMenuOpen)
         {
-            if (!isItemMenuOpen) // ← 道具メニューを開いてない時だけカーソル操作
+            if (!isItemMenuOpen)
             {
                 bool moved = false;
 
                 switch (currentIndex)
                 {
-                    case 0: // 左上
-                        if (Input.GetKeyDown(KeyCode.DownArrow))
-                        { currentIndex = 2; moved = true; }
-                        else if (Input.GetKeyDown(KeyCode.RightArrow))
-                        { currentIndex = 1; moved = true; }
+                    case 0:
+                        if (Input.GetKeyDown(KeyCode.DownArrow)) { currentIndex = 2; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.RightArrow)) { currentIndex = 1; moved = true; }
                         break;
-
-                    case 1: // 右上
-                        if (Input.GetKeyDown(KeyCode.DownArrow))
-                        { currentIndex = 3; moved = true; }
-                        else if (Input.GetKeyDown(KeyCode.LeftArrow))
-                        { currentIndex = 0; moved = true; }
+                    case 1:
+                        if (Input.GetKeyDown(KeyCode.DownArrow)) { currentIndex = 3; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.LeftArrow)) { currentIndex = 0; moved = true; }
                         break;
-
-                    case 2: // 左下
-                        if (Input.GetKeyDown(KeyCode.UpArrow))
-                        { currentIndex = 0; moved = true; }
-                        else if (Input.GetKeyDown(KeyCode.RightArrow))
-                        { currentIndex = 3; moved = true; }
+                    case 2:
+                        if (Input.GetKeyDown(KeyCode.UpArrow)) { currentIndex = 0; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.RightArrow)) { currentIndex = 3; moved = true; }
                         break;
-
-                    case 3: // 右下
-                        if (Input.GetKeyDown(KeyCode.UpArrow))
-                        { currentIndex = 1; moved = true; }
-                        else if (Input.GetKeyDown(KeyCode.LeftArrow))
-                        { currentIndex = 2; moved = true; }
+                    case 3:
+                        if (Input.GetKeyDown(KeyCode.UpArrow)) { currentIndex = 1; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.LeftArrow)) { currentIndex = 2; moved = true; }
                         break;
                 }
 
-                if (moved)
-                    UpdateCursor();
-
+                if (moved) UpdateCursor();
                 enterMenu();
             }
             else
             {
-                // 例えば Esc キーで ItemMenu を閉じる
-                if (Input.GetKeyDown(KeyCode.Escape))
-                {
-                    CloseItemMenu();
-                }
+                if (Input.GetKeyDown(KeyCode.UpArrow)) { itemIndex = Mathf.Max(0, itemIndex - 1); UpdateItemCursor(); }
+                else if (Input.GetKeyDown(KeyCode.DownArrow)) { itemIndex = Mathf.Min(itemSlots.Count - 1, itemIndex + 1); UpdateItemCursor(); }
+                else if (Input.GetKeyDown(KeyCode.Return)) { UseItem(itemIndex); }
+                else if (Input.GetKeyDown(KeyCode.Escape)) { CloseItemMenu(); }
             }
 
             yield return null;
         }
-
-
-
     }
-
 
     void EndMenu()
     {
-        // もしアイテムメニューが開いていたら閉じる
-        if (isItemMenuOpen)
-        {
-            CloseItemMenu();
-        }
-
-        menu.SetActive(false);   // メニューを閉じる
+        if (isItemMenuOpen) CloseItemMenu();
+        menu.SetActive(false);
         GameManager.gameState = GameState.playing;
-        Time.timeScale = 1.0f;
+        Time.timeScale = 1f;
         isMenuOpen = false;
-
-        // カーソル位置をリセット（次回開いたときは左上からスタート）
         currentIndex = 0;
         UpdateCursor();
     }
 
     void UpdateCursor()
     {
-        foreach (var cursor in cursors)
-            if (cursor != null) cursor.SetActive(false);
-
-        if (cursors[currentIndex] != null)
-            cursors[currentIndex].SetActive(true);
+        foreach (var cursor in cursors) if (cursor != null) cursor.SetActive(false);
+        if (cursors[currentIndex] != null) cursors[currentIndex].SetActive(true);
     }
 
     void enterMenu()
     {
-        //currentIndexでどのメニューを押したか判別
-        if (Input.GetKeyDown(KeyCode.Return)) // Enterキー
+        if (Input.GetKeyDown(KeyCode.Return))
         {
             switch (currentIndex)
             {
-                case 0: // 話す
-                    Debug.Log("話すを選択");
-                    // Talk() など関数を呼び出す
-                    break;
-
-                case 1: // 道具
-                    Debug.Log("道具を選択");
-                    OpenItemMenu();
-                    break;
-
-                case 2: // 調べる
-                    Debug.Log("調べるを選択");
-                    var player = Object.FindFirstObjectByType<PlayerController>();
-                    if (player != null)
-                    {
-                        player.CheckObject();
-                    }
-                    //CheckObject();
-                    break;
-
-                case 3: // 装備
-                    Debug.Log("装備を選択");
-                    // OpenEquipMenu();
-                    break;
+                case 0: break;
+                case 1: OpenItemMenu(); break;
+                case 2: break;
+                case 3: break;
             }
         }
     }
-
     void OpenItemMenu()
     {
         itemMenu.SetActive(true);
         isItemMenuOpen = true;
 
-        string displayText = "";
-        foreach (var item in playerItem.items)
+        foreach (var slot in itemSlots) Destroy(slot);
+        itemSlots.Clear();
+
+        foreach (var i in playerItem.items)
         {
-            displayText += $"{item.name} ×{item.count}\n";
+            GameObject slot = new GameObject("ItemSlot");
+            slot.transform.SetParent(itemListParent, false);
+
+            RectTransform rt = slot.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(150, 30);
+
+            TextMeshProUGUI text = slot.AddComponent<TextMeshProUGUI>();
+            text.text = $"{i.name} ×{i.count}";
+            text.fontSize = 24;
+            text.lineSpacing = 0f;
+
+            // 文字色を強制白に設定
+            text.color = Color.white;
+            text.fontMaterial = Instantiate(text.fontMaterial);
+            text.fontMaterial.SetColor("_FaceColor", Color.white);
+            text.ForceMeshUpdate();
+
+            LayoutElement le = slot.AddComponent<LayoutElement>();
+            le.minHeight = 30;
+            le.preferredHeight = 30;
+
+            GameObject cursor = Instantiate(cursorPrefab, slot.transform);
+            cursor.name = "Cursor";
+            cursor.SetActive(false);
+
+            itemSlots.Add(slot);
         }
 
-        itemText.text = displayText;
-
-
-
+        itemIndex = 0;
+        UpdateItemCursor();
     }
+
 
     void CloseItemMenu()
     {
         itemMenu.SetActive(false);
         isItemMenuOpen = false;
+    }
+
+    void UpdateItemCursor()
+    {
+        for (int i = 0; i < itemSlots.Count; i++)
+        {
+            Transform cursor = itemSlots[i].transform.Find("Cursor");
+            if (cursor != null)
+            {
+                cursor.gameObject.SetActive(i == itemIndex);
+
+                if (i == itemIndex) // 選択中のみ位置調整
+                {
+                    RectTransform cursorRT = cursor.GetComponent<RectTransform>();
+                    if (cursorRT != null)
+                    {
+                        cursorRT.anchoredPosition = new Vector2(-100, -10); // 左に20移動
+                    }
+                }
+            }
+        }
+    }
+
+    void UseItem(int index)
+    {
+        Debug.Log($"{playerItem.items[index].name} を使用しました");
     }
 }
