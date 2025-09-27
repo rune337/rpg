@@ -23,4 +23,17 @@ public class BattleMessageWindow : MonoBehaviour
         // まとめて表示
         messageText.text = string.Join("\n", messageQueue);
     }
+
+    // ★★★ 全てのメッセージを消去するための新しいメソッド ★★★
+    public void ClearMessages()
+    {
+        if (messageText != null)
+        {
+            // キューの中身を完全に空にする
+            messageQueue.Clear();
+
+            // 画面のテキストも空にする
+            messageText.text = "";
+        }
+    }
 }

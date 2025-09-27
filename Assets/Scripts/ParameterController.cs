@@ -1,6 +1,7 @@
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine;
 
 public class ParameterController : MonoBehaviour
 {
@@ -13,6 +14,10 @@ public class ParameterController : MonoBehaviour
     public GameObject battleMessage;
     TextMeshProUGUI message;
     BattleMessageWindow battleMessageWindow;
+
+    GameObject talkPanel;
+    TextMeshProUGUI itemText;
+
 
 
     public EnemyData[] enemyDataArray; //エネミーのデータを入れる配列
@@ -80,12 +85,22 @@ public class ParameterController : MonoBehaviour
         message = battleMessage.transform.Find("Message").GetComponent<TextMeshProUGUI>();
         battleMessageWindow = canvas.GetComponent<BattleMessageWindow>();
 
+        talkPanel = canvas.transform.Find("Talk").gameObject;
+        itemText = talkPanel.transform.Find("ItemText").GetComponent<TextMeshProUGUI>();
+
         PlayerSet();
         EnemySet();
 
         battle = GameObject.FindGameObjectWithTag("Player");
         playerEncount = battle.GetComponent<EncountManger>();
         // isBattleOpen = playerEncount.isBattleOpen;
+
+        if (itemText != null)
+        {
+            itemText.text = "";
+            talkPanel.SetActive(false);
+
+        }
 
         if (enemies.Count > 0 && enemies[0].hp > 0)
         {
@@ -189,11 +204,34 @@ public class ParameterController : MonoBehaviour
     {
         stats.equippedItems.Add(itemData);
         stats.RecalculateStats();
-        Debug.Log($"{stats.name} が {itemData.itemName} を装備 → 攻撃: {stats.attack}, 防御: {stats.defense}, 速度: {stats.speed}");
-    }
+            string statusMessage = $"{stats.name}が「{itemData.itemName}」を装備した\n攻撃:{stats.attack} 防御:{stats.defense} 速度:{stats.speed}";
+            Debug.Log(statusMessage);
+
+            // ★★★ メッセージ表示用のコルーチンを呼び出す ★★★
+            if (itemText != null)
+            {
+                // 既存のコルーチンがあれば停止してから新しいものを開始
+                StopAllCoroutines();
+                StartCoroutine(ShowStatusMessage(statusMessage, 1f)); // 3秒間表示
+            }
+
+        }
 }
 
-public void UnequipItem(ItemData itemData, int playerIndex = 0)
+    IEnumerator ShowStatusMessage(string message, float duration)
+    {
+        talkPanel.SetActive(true); // パネルを表示
+        itemText.text = message; // メッセージを表示
+
+        yield return new WaitForSeconds(duration); // durationで指定された秒数だけ待つ
+
+        itemText.text = ""; // メッセージをクリアする
+        talkPanel.SetActive(false); // パネルを非表示
+    }
+
+
+
+    public void UnequipItem(ItemData itemData, int playerIndex = 0)
 {
     if (playerIndex < 0 || playerIndex >= player.Count) return;
 

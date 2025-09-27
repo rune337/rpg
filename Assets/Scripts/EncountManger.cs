@@ -103,6 +103,9 @@ public class EncountManger : MonoBehaviour
         GameManager.gameState = GameState.battle;
         battlePanel.SetActive(true);
         Time.timeScale = 0;
+
+        battleMessageWindow.ClearMessages();
+
         randomEnemy = Random.Range(0, parameter.enemies.Count); //0~1のリストからランダムに敵を選択、乱数はリストの範囲
         string str = $"{parameter.enemies[randomEnemy].name}があらわれた\nどうする？";
         battleMessageWindow.AddMessage(str);
