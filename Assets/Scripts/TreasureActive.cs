@@ -11,16 +11,13 @@ public class TreasureActive : MonoBehaviour
     public MessageData msg;
     GameObject canvas;
     GameObject talkPanel;
-    TextMeshProUGUI messageText;
+    TextMeshProUGUI itemText;
 
     void Start()
     {
         canvas = GameObject.FindGameObjectWithTag("Canvas");
         talkPanel = canvas.transform.Find("Talk").gameObject;
-        messageText = talkPanel.transform.Find("MessageText").GetComponent<TextMeshProUGUI>();
-        var textObj = talkPanel?.transform.Find("MessageText");
-        if (textObj == null) Debug.LogError("MessageText が見つからない！");
-        else messageText = textObj.GetComponent<TextMeshProUGUI>();
+        itemText = talkPanel.transform.Find("ItemText").GetComponent<TextMeshProUGUI>();
     }
 
 
@@ -78,7 +75,7 @@ public class TreasureActive : MonoBehaviour
         GameManager.gameState = GameState.talk;
         talkPanel.SetActive(true);
         Time.timeScale = 0;
-        messageText.text = msg.msgData[0].message;
+        itemText.text = msg.msgData[0].message;
 
         // 押しっぱなし対策: 一度キーを離すまで待機
         while (Input.GetKey(KeyCode.Return))

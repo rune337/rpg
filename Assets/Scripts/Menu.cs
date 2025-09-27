@@ -1,24 +1,33 @@
 using System.Collections;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 public class Menu : MonoBehaviour
 {
     public GameObject canvas; //キャンバス一番親
     public GameObject menu;  //メニューパネル
+    public GameObject player;
 
     TextMeshProUGUI talk;  //話す
     TextMeshProUGUI item;  //道具
     TextMeshProUGUI check; //調べる
     TextMeshProUGUI equip; //装備
+    ItemInventory playerItem;
+
+    public GameObject itemMenu;
 
     public GameObject[] cursors; //カーソル
     int currentIndex = 0; // 現在のカーソル位置（0=左上）
 
     public bool isMenuOpen = false; //メニュー開いているかどうかの判別フラグ
+    TextMeshProUGUI itemText;
+    bool isItemMenuOpen = false;
 
     void Start()
     {
+        player = GameObject.FindGameObjectWithTag("Player");
         canvas = GameObject.FindGameObjectWithTag("Canvas");
         menu = canvas.transform.Find("Menu").gameObject;
 
@@ -27,11 +36,17 @@ public class Menu : MonoBehaviour
         check = menu.transform.Find("Check").GetComponent<TextMeshProUGUI>();
         equip = menu.transform.Find("Equip").GetComponent<TextMeshProUGUI>();
 
+        itemMenu = menu.transform.Find("ItemMenu").gameObject;
+
         cursors = new GameObject[4];
         cursors[0] = talk.transform.Find("Cursor").gameObject;
         cursors[1] = item.transform.Find("Cursor").gameObject;
         cursors[2] = check.transform.Find("Cursor").gameObject;
         cursors[3] = equip.transform.Find("Cursor").gameObject;
+
+        playerItem = player.GetComponent<ItemInventory>();
+        itemText = itemMenu.transform.Find("ItemText").GetComponent<TextMeshProUGUI>();
+
 
         foreach (var cursor in cursors)
             cursor.SetActive(false);
@@ -56,7 +71,7 @@ public class Menu : MonoBehaviour
             }
         }
 
-       
+
     }
 
     void StartMenu()
@@ -74,54 +89,79 @@ public class Menu : MonoBehaviour
     {
         while (isMenuOpen)
         {
-            bool moved = false;
-
-            switch (currentIndex)
+            if (!isItemMenuOpen) // ← 道具メニューを開いてない時だけカーソル操作
             {
-                case 0: // 左上
-                    if (Input.GetKeyDown(KeyCode.DownArrow))
-                    { currentIndex = 2; moved = true; }
-                    else if (Input.GetKeyDown(KeyCode.RightArrow))
-                    { currentIndex = 1; moved = true; }
-                    break;
+                bool moved = false;
 
-                case 1: // 右上
-                    if (Input.GetKeyDown(KeyCode.DownArrow))
-                    { currentIndex = 3; moved = true; }
-                    else if (Input.GetKeyDown(KeyCode.LeftArrow))
-                    { currentIndex = 0; moved = true; }
-                    break;
+                switch (currentIndex)
+                {
+                    case 0: // 左上
+                        if (Input.GetKeyDown(KeyCode.DownArrow))
+                        { currentIndex = 2; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.RightArrow))
+                        { currentIndex = 1; moved = true; }
+                        break;
 
-                case 2: // 左下
-                    if (Input.GetKeyDown(KeyCode.UpArrow))
-                    { currentIndex = 0; moved = true; }
-                    else if (Input.GetKeyDown(KeyCode.RightArrow))
-                    { currentIndex = 3; moved = true; }
-                    break;
+                    case 1: // 右上
+                        if (Input.GetKeyDown(KeyCode.DownArrow))
+                        { currentIndex = 3; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+                        { currentIndex = 0; moved = true; }
+                        break;
 
-                case 3: // 右下
-                    if (Input.GetKeyDown(KeyCode.UpArrow))
-                    { currentIndex = 1; moved = true; }
-                    else if (Input.GetKeyDown(KeyCode.LeftArrow))
-                    { currentIndex = 2; moved = true; }
-                    break;
+                    case 2: // 左下
+                        if (Input.GetKeyDown(KeyCode.UpArrow))
+                        { currentIndex = 0; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.RightArrow))
+                        { currentIndex = 3; moved = true; }
+                        break;
+
+                    case 3: // 右下
+                        if (Input.GetKeyDown(KeyCode.UpArrow))
+                        { currentIndex = 1; moved = true; }
+                        else if (Input.GetKeyDown(KeyCode.LeftArrow))
+                        { currentIndex = 2; moved = true; }
+                        break;
+                }
+
+                if (moved)
+                    UpdateCursor();
+
+                enterMenu();
+            }
+            else
+            {
+                // 例えば Esc キーで ItemMenu を閉じる
+                if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    CloseItemMenu();
+                }
             }
 
-            if (moved)
-                UpdateCursor();
-
-            enterMenu();
-
-            yield return null; // 毎フレーム待機
+            yield return null;
         }
+
+
+
     }
+
 
     void EndMenu()
     {
+        // もしアイテムメニューが開いていたら閉じる
+        if (isItemMenuOpen)
+        {
+            CloseItemMenu();
+        }
+
         menu.SetActive(false);   // メニューを閉じる
         GameManager.gameState = GameState.playing;
         Time.timeScale = 1.0f;
         isMenuOpen = false;
+
+        // カーソル位置をリセット（次回開いたときは左上からスタート）
+        currentIndex = 0;
+        UpdateCursor();
     }
 
     void UpdateCursor()
@@ -135,7 +175,7 @@ public class Menu : MonoBehaviour
 
     void enterMenu()
     {
-         //currentIndexでどのメニューを押したか判別
+        //currentIndexでどのメニューを押したか判別
         if (Input.GetKeyDown(KeyCode.Return)) // Enterキー
         {
             switch (currentIndex)
@@ -147,7 +187,7 @@ public class Menu : MonoBehaviour
 
                 case 1: // 道具
                     Debug.Log("道具を選択");
-                    // OpenItemMenu();
+                    OpenItemMenu();
                     break;
 
                 case 2: // 調べる
@@ -166,5 +206,28 @@ public class Menu : MonoBehaviour
                     break;
             }
         }
+    }
+
+    void OpenItemMenu()
+    {
+        itemMenu.SetActive(true);
+        isItemMenuOpen = true;
+
+        string displayText = "";
+        foreach (var item in playerItem.items)
+        {
+            displayText += $"{item.name} ×{item.count}\n";
+        }
+
+        itemText.text = displayText;
+
+
+
+    }
+
+    void CloseItemMenu()
+    {
+        itemMenu.SetActive(false);
+        isItemMenuOpen = false;
     }
 }

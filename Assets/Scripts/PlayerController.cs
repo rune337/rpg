@@ -60,6 +60,8 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameManager.gameState != GameState.playing)
+        return; // メニュー中などは入力を受け付けない
 
         if (menu != null && menu.isMenuOpen)
         {
